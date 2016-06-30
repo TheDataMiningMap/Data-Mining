@@ -1,0 +1,163 @@
+---
+title: "Maximum likelihood estimation"
+author: "Louis-Marc Mercier"
+date: "January 2016"
+output: html_document
+---
+
+## Introduction
+ The rigourous study of likelihoods and their properties started around in the 1920s and it was due to Ronald Aylmer Fisher. Understanding the maximum likelihood estimation is an important thing before studying *Inferential Statistics* and it has many applications. 
+
+## Definition
+Let $X_{1},X_{2},...,X_{n}$ have the same joint density distribution or a joint probability mass function:
+$$f(x_{1},x_{2},...,x_{n} \lvert \theta)$$
+Given a sample $\mathbf{x}=({x_{1},x_{2},...,x_{n}})$, the likelihood is defined as:
+$$L(\theta)=L(\theta \lvert \mathbf{x})=f(\mathbf{x}\lvert \theta)$$
+We may think that the likelihood and the joint density is the same, but the interpretation is different. Indeed, $f(\mathbf{x}\lvert \theta)$ is a function of $\mathbf{x}$ with $\theta$ known. On the other side, $L(\theta\lvert\mathbf{x})$ is a function of $\theta$ with the $\mathbf{x}$ know. Thus, the interpretation is the following:
+
+* $f(\mathbf{x}\lvert\theta)$ is a way to measure how probable is $\mathbf{x}$ for a fixed value of $\theta$
+* $L(\theta\lvert \mathbf{x})$ measures how probable is the parameter $\theta$ for a given sample $\mathbf{x}$
+
+The maximum likelihood estimator of $\theta$ is the value that maximizes the likelihood. In other words, it is the value that seems the most probable for the given sample $\mathbf{x}$. For example, if we have $L(\theta_{1}\lvert\theta)>L(\theta_{2}\lvert\theta)$ means that $\theta_{1}$ is a more plausible value than $\theta_{2}$. In this document, we will suppose that $X_{1},X_{2},...,X_{n}$ are *independent and identically distributed* (iid). Then, we can express the likelihood as:
+$$L(\theta\lvert\mathbf{x})=\prod_{i=1}^{n}f(x_{i}\lvert\theta)$$
+If we suppose that we encouter a differential and unimodal function, we can obtain the maximum by isolating $\theta$ in $\frac{\partial L(\theta)}{\partial \theta}=0$. However, applying the derivative of this function by using the product rule is difficult. To make think easier, we take the logarithm of $L(\theta)$:
+$$\ell(\theta)=\text{log}(L(\theta))=\sum_{i=1}^{n}\text{log}(f(x_{i}\lvert\theta))$$
+Remember that we can do this transformation because the logarithm is a monotonic and increasing function.
+
+## Example: Normal distribution
+Let $X_{1},X_{2},...,X_{n}$ be iid observations form a normal distribution. The likelihood depends of the parameters $\mu$ and $\sigma$:
+$$L(\mu,\theta)=\prod_{i=1}^{n}\frac{1}{\sigma\sqrt{2\pi}}\text{exp}\Big[-\frac{1}{2\sigma^{2}}(x_{i}-\mu)^{2}\Big]$$
+Thus, the log-likelihood is:
+$$\ell(\mu,\sigma)=-n\text{log}(\sigma)-\frac{n}{2}\text{log}(2\pi)-\frac{1}{2\sigma^{2}}\sum_{i=1}^{n}(x_{i}-\mu)^{2} $$
+If we derive this expression according to $\mu$ and $\sigma$, we obtain:
+$$\frac{\partial\ell}{\partial\mu}=\frac{1}{\sigma^{2}}\sum_{i=1}^n (x_{i}-\mu)$$
+$$\frac{\partial\ell}{\partial\sigma}=-\frac{n}{\sigma}+\frac{1}{\sigma^{3}}\sum_{i=1}^{n}(x_{i}-\mu)^2$$
+If we set each expression to zero, we obtain the following solutions:
+$$\hat{\mu}=\bar{x} $$
+$$\hat{\sigma}^{2}=\frac{1}{n}\sum_{i=1}^{n}(x_{i}-\bar{x})^{2}$$
+Normally, we have to verify that it is a maximum. Unfortunately, proving this involves a lot of calculation. You can find the proof in some manuals like *Statistical Inference* by Casella & Berger.
+
+## Asymptotic theory of the maximum likelihood estimator(MLE)
+For some distributions such as Poisson and normal distributions, we can find easily and exactly the MLE! However, it is not the case for many functions. Try to do it with gamma and angular distributions as exercises.
+
+One of the interesting solutions is to use the asymptotic theory. Indeed, for big enough samples, we can use the central limit theorem to have our sample distribution of the approach a normal distribution. The following theorems will not be proven, but are interesting to keep in mind:
+
+* **Definition 1**: The score function is defined as:
+$$S(\mathbf{x}\lvert\theta)=\frac{\partial}{\partial\theta}\text{log}f(\mathbf{X}\lvert\theta)$$
+* **Definition 2**: The expectation of the score function is equal to zero:
+$$\mathbb{E}[S(\mathbf{x}\lvert\theta)]=\mathbb{E}\Big[\frac{\partial}{\partial\theta}\text{log}f(\mathbf{X}\lvert\theta)\Big]=0$$
+* **Definition 3**: Fisher's information is the variance of the score function:
+$$I(\theta)=\text{Var}(S(\mathbf{X}\lvert\theta))=\mathbb{E}\Bigg[\Big[\frac{\partial}{\partial\theta}\text{log}f(\mathbf{X}\lvert\theta)\Big]^{2}\Bigg]$$
+* **Theorem 1**: If $f$ satisfies some conditions of regularity, the MLE for an iid sample is convergent:
+$$\frac{1}{n}\ell(\theta)\rightarrow\mathbb{E}(\text{log}(f(\mathbf{X}\lvert\theta)))$$
+* **Theorem 2**: Under some conditions of regularity, we have that:
+$$I(\theta)=-\mathbb{E}\Big[\frac{\partial^{2}}{\partial\theta^{2}}\text{log}(f(\mathbf{X}\lvert\theta))\Big] $$
+
+Finally, the most interesting one is the following:
+
+* **Theorem 3**: Under some conditions of regularity on $f$, the sample distribution converges in distribution towards a standardized normal distribution $\mathcal{N}(0,1)$:
+$$\sqrt{nI(\theta)}(\hat{\theta}-\theta_{0})\overset{d}{\rightarrow} \mathcal{N}(0,1)$$
+In other terms, the MLE is an asymptotic unbiased estimator and his asymptotic variance decreases as $n$ gets bigger! These properties will lead us to the construction of confidence intervals. You should be able to prove some of these theorems. The easier ones will be asked as exercises. However, be careful! For **Theorem 4**, the real value of the parameter must be an interior point of the parameter space.
+
+
+## Asymptotic confidence interval
+Finding the asymptotic confidence interval form is pretty easy. With the theorem 4, we can conclude that:
+$$P\Big(-z\Big(\frac{\alpha}{2}\Big)<\sqrt{nI(\theta)}(\hat{\theta}-\theta_{0})<z\Big(\frac{\alpha}{2}\Big)\Big)\rightarrow 1-\alpha \quad\text{as}\quad n\rightarrow\infty$$
+By doing some algebra, we reach the following form:
+$$P\Bigg(\hat{\theta}-z\Big(\frac{\alpha}{2}\Big)\frac{1}{\sqrt{nI(\hat{\theta})}}<\theta_{0})<\hat{\theta}+z\Big(\frac{\alpha}{2}\Big)\frac{1}{\sqrt{nI(\hat{\theta})}}\Bigg)\rightarrow 1-\alpha \quad\text{as}\quad n\rightarrow\infty$$
+We can formulate this asymptotic interval(with a level of $1-\alpha$) as:
+$$\hat{\theta}\pm z(\alpha/2)\frac{1}{\sqrt{nI(\hat{\theta})}} $$
+
+## Cramer-Rao bound (for iid observations)
+To compare different estimators, we use the $MSE$(*Mean Square Error*). It is defined as:
+$$MSE(\hat{\theta})=\mathbb{E}(\hat{\theta}-\theta)^{2}=\text{Var}(\hat{\theta})+(E(\hat{\theta}-\theta))^{2}$$
+The bias of an estimator is $E(\hat{\theta})-\theta$. An estimator $\hat{\theta}$ is called *unbiased* estimator if $E(\hat{\theta})=\theta$. The next picture is a way to visualize the idea of variance and bias:
+
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=FALSE}
+library(png)
+library(grid)
+```
+<center>
+```{r fig.width=4.5, fig.height=4.0, message=FALSE, cache=FALSE, echo=FALSE}
+img <- readPNG("figures/bullseye.png")
+ grid.raster(img)
+```
+<\center>
+
+So, the $MSE$ is the sum of the variance and the square of the bias. Let's state the Cramer-Rao theorem:
+
+* **Theorem 4**: Let $X_{1},X_{2},...,X_{n}$ be a sample of iid observations from a density $f(\mathbf{x}\lvert\theta)$. Let $T=t(x_{1},x_{2},...,x_{n})$ be an unbiased estimator of $\theta$. Then, under some conditions of regularity on $f(\mathbf{x}\lvert\theta)$:
+$$\text{Var}(T)\ge \frac{1}{nI(\theta)}$$
+
+So, if an unbiased estimator has a variance which is equal to the lower bound of the *Cramer-Rao bound*, it will be called a *minimum variance unbiased*(MVU) estimator. In this case, we can claim that we can not find an unbiased estimator with a smaller variance than the MVU estimator. However, it is important to keep in mind that it is still possible to have a biased estimator with a lower $MSE$ than a MVU estimator. 
+
+A last thing to notice is that the variance of the maximum likely estimator is equal to *Cramer Rao*'s bound. This means that the *MLE* is asymptotically a MVU estimator! 
+
+## Generalization
+It becomes easy to misunderstand the MLE theory when you have many parameters. Here is the generalisation of the theory. Let's suppose that the function $\ell(\theta)$ is of class $C^{2}$. If you have $\underset{\sim}{\theta}$ as a vector of parameters of dimension$(p\times 1)$, you have to set all the partial derivatives to zero. In matrix notation, it is equivalent to set the gradient vector to zero:
+$$
+\nabla\ell(\underset{\sim}{\theta})=
+\begin{bmatrix}
+  \frac{\partial\ell}{\partial\theta_{1}}  \\ 
+  \frac{\partial\ell}{\partial\theta_{2}}   \\ 
+    \vdots \\ 
+  \frac{\partial\ell}{\partial\theta_{p}} 
+   \end{bmatrix}
+   =
+   \begin{bmatrix}
+  0  \\ 
+  0   \\ 
+    \vdots \\ 
+  0 
+   \end{bmatrix} \quad (i)
+$$
+Then, you must find the set of solutions which respect this equality.
+The second step is to calculate the Hessian matrix of the log-likelihood which we will denote as $\nabla^{2}\ell(\underset{\sim}{\theta})$:
+$$\mathbf{\nabla}^{2}\ell(\underset{\sim}{\theta})=
+\begin{bmatrix}
+  \frac{\partial^{2}\ell(\theta)}{\partial\theta_{1}^{2}} & 
+    \frac{\partial^{2}\ell(\theta)}{\partial\theta_{1}\partial\theta_{2}} &...& 
+    \frac{\partial^{2}\ell(\theta)}{\partial\theta_{1}\partial\theta_{p}} \\ 
+  \frac{\partial^{2}\ell(\theta)}{\partial\theta_{2}\partial\theta_{1}} & 
+    \frac{\partial^{2}\ell(\theta)}{\partial\theta_{2}^{2}} &...& 
+    \frac{\partial^{2}\ell(\theta)}{\partial\theta_{2}\partial\theta_{p}} \\ 
+  \vdots &\vdots & \ddots & \vdots \\ 
+  \frac{\partial^{2}\ell(\theta)}{\partial\theta_{p}\partial\theta_{1}} &
+    \frac{\partial^{2}\ell(\theta)}{\partial\theta_{p}\partial\theta_{2}} & ... & 
+     \frac{\partial^{2}\ell(\theta)}{\partial\theta_{p}^{2}}
+  \end{bmatrix}
+$$
+
+For all the solutions of $(i)$, check if there are any maximum with the following properties($\prec:\text{Negative definite},\succ:\text{Positive definite}$):
+$$\ell(\underset{\sim}{\theta})\in C^{2},\nabla\ell(\hat{\underset{\sim}{\theta}})=0,\nabla^{2}\ell(\hat{\underset{\sim}{\theta}})\prec 0 \Rightarrow \text{Local maximum} $$
+$$\ell(\underset{\sim}{\theta})\in C^{2},\nabla\ell(\hat{\underset{\sim}{\theta}})=0,\nabla^{2}\ell(\underset{\sim}{\theta})\prec 0\quad\forall\underset{\sim}{\theta} \Rightarrow \text{Global maximum} $$
+These are some sufficient second order conditions. If you want to know more about this, I recommend you to read some documentation on non-linear optimization...particularly on first and second order conditions.
+
+* **Definition 4**: The score function for $\underset{\sim}{\theta}$ is a $(p\times 1)$ vector defined as:
+$$\mathbf{S}(\mathbf{x}\lvert\underset{\sim}{\theta})=\Bigg[\frac{\partial}{\partial\theta_{1}}\text{log}f(\mathbf{X}\lvert\theta),\frac{\partial}{\partial\theta_{2}}\text{log}f(\mathbf{X}\lvert\theta),...,\frac{\partial}{\partial\theta_{p}}\text{log}f(\mathbf{X}\lvert\theta)\Bigg]^{\top}$$
+* **Definition 5**: The expectation of the score function in function of $\underset{\sim}{\theta}$ is the null vector:
+$$\mathbb{E}[\mathbf{S}(\mathbf{x}\lvert\underset{\sim}{\theta})]=\mathbb{E}\Bigg[\frac{\partial}{\partial\theta_{1}}\text{log}f(\mathbf{X}\lvert\theta),\frac{\partial}{\partial\theta_{2}}\text{log}f(\mathbf{X}\lvert\theta),...,\frac{\partial}{\partial\theta_{p}}\text{log}f(\mathbf{X}\lvert\theta)\Bigg]^{\top}=\mathbf{0}_{n\times 1}$$
+* **Definition 4**: Fisher's Information matrix is covariance matrix of size $(p\times p)$ with the following entries:
+$$\mathbf{I}(\underset{\sim}{\theta})=\text{Cov}(\mathbf{S}(\mathbf{x}\lvert\underset{\sim}{\theta}))=\mathbb{E}\Bigg[-\frac{\partial^{2}\ell(\underset{\sim}{\theta})}{\partial\theta_{i}\partial\theta_{j}}\Bigg] \quad 1\le i,j \le p$$
+* **Definition 5**: The observed Fisher's Information matrix is a matrix of size $(p\times p)$ with the following entries:
+$$\mathbf{I}(\hat{\underset{\sim}{\theta}})=-\frac{\partial^{2}\ell(\underset{\sim}{\theta})}{\partial\theta_{i}\partial\theta_{j}}\bigg\vert_{\theta=\hat{\theta}}  \quad 1\le i,j \le p$$
+* **Theorem 5**: The generalisation of the **Theorem 3** is that:
+$$\hat{\underset{\sim}{\theta}}\overset{a}{\sim}\mathcal{N}(\mathbf{\underset{\sim}{\theta}},[\mathbf{I}(\hat{\underset{\sim}{\theta}})]^{-1})$$
+* **Theorem 6**: If $\hat{\underset{\sim}{\theta}}=T(\mathbf{X})$ is an unbiased estimator of $\underset{\sim}{\theta}$, then the *Cramer-Rao bound* is ($\succeq$: Positive semi definite) :
+$$\text{Cov}_{\underset{\sim}{\theta}}{(\hat{\underset{\sim}{\theta}})}\ge[\mathbf{I}(\hat{\underset{\sim}{\theta}}))]^{-1} \Leftrightarrow \text{Cov}_{\underset{\sim}{\theta}}{(\hat{\underset{\sim}{\theta}})}-[\mathbf{I}(\hat{\underset{\sim}{\theta}}))]^{-1}\succeq \mathbf{0} $$
+
+## Conclusion
+Now, let's review some important properties of the *maximum likelihood estimator*. First, it is an asymptotic unbiased estimator. Next, asymptotically, it converges toward the *Cramer-Rao bound*. Finally and most importantly, for $n\rightarrow\infty$, it converges in distribution towards a multivariate normal distribution. The mean of this distribution is the true value(s) of the parameter(s) and the covariance matrix is the inverse of Fisher's observed information. This is an important result! Often, we have a lot of observations to our disposition in datamining. This means that in such case, we do not really need to know the distribution of $\underset{\sim}{\theta}$. The asymptotic result is enough! Also, this estimator is unbiased and has minimal variance asymptotically. With these beautiful properties, the *MLE* estimator is a good candidate for point estimation!
+
+## References
+
+* Statistical Inference.,
+  George Casella & Roger L. Berger,
+  1990
+* The Elements of Statistical Learning.,
+  Trevor Hastie, Robert Tibshirani & Jerome Friedman,
+  2002
+* STT 2700: Concepts et m?thodes en statistique.,
+  Martin Bilodeau,
+  2013
