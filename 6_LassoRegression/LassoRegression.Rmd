@@ -1,0 +1,135 @@
+---
+title: "Lasso regression"
+author: "Louis-Marc Mercier"
+date: "May 2016"
+output: html_document
+---
+
+## Introduction
+ In the document about [ridge regression](https://fr.wikipedia.org/wiki/R%C3%A9gularisation_Tychonoff), the cost function was composed of the loss function of the linear regression and there was a $\ell_{2}$ penalization function on the coefficients of $\boldsymbol{\beta}$. It turns out that an interesting situation is when some coefficients are near zero. However, such small coefficients are never equal to zero. This is inconvenient in terms of interpretation...particularly if there are a lot of explanatory variables. What if someone wants to build up a predictive model with only a few explanatory variables? An interesting way to solve this problem is to use the Least Absolute Shrinkage and Selection Operator (lasso). This method have been developped by Tibshirani (1996) and has been very popular since then.
+ 
+**Packages Used** : {glmnet}, {ElemStatLearn}, {MASS}, {broom}, {ggplot2}, {visreg} and {tidyr}.
+
+## Conventions
+Here are some conventions that need to be applied when calculating the lasso regression coefficients:
+
+* The design matrix $\mathbf{X}$ has to be standardized (mean 0 and unit variance) .
+* For the cost function, $\boldsymbol{\beta}$ is the classical vector of regression coefficients, but without the intercept $\beta_{0}$.
+* $\mathbf{y}$ is assumed to be centered.
+
+In general, these conventions are enforced by statistical softwares. 
+
+## Definition 
+The lasso regression estimator is obtained by minimizing the following cost function: 
+$$S(\boldsymbol{\beta})=(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})+\lambda\sum_{j=1}^{k}\lvert \beta_{j}\lvert\quad\text{with}\quad \lambda\in[0,\infty[$$
+It is interesting to notice that the loss function and the penalization function are convex. Thus, we have a convex optimization problem. Also, lasso penalization is weaker than ridge for large values of coefficients.
+
+## Interpretation
+The cost function is similar to the one of the ridge regression. The key difference is in the penalty term. This $\ell_{1}$ penalty is such that when the tuning parameter $\lambda$ increases, more coefficients are set to zero. This coefficient reduction is a way to do variable selection. Like for the ridge regression, we have that:
+
+* As $\lambda\rightarrow 0,  \hat{\boldsymbol{\beta}}^{\text{ lasso}}\rightarrow\hat{\boldsymbol{\beta}}^{\text{ OLS}}$
+* As $\lambda\rightarrow\infty,  \hat{\boldsymbol{\beta}}^{\text{ lasso}}\rightarrow\mathbf{0}$
+
+Thus, the experimentator has to make a choice about the value of $\lambda$. Cross-validation is an interesting way to choose $\lambda$. One has to keep in mind that the purpose is to do variable selection and to have a good predictive model.
+
+## Geometric interpretation
+
+A [penalized optimization](http://www.stat.cmu.edu/~cshalizi/statcomp/14/lectures/18/lecture-18.pdf) problem can be interpreted as an optimization problem under constraints. Thus, the difference between ridge regression and lasso regression is only about the constraint. Let's consider an example with only two explanatory variables:
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=FALSE}
+library(png)
+library(grid)
+```
+<center>
+```{r fig.width=4.5, fig.height=4.5, message=FALSE, cache=FALSE, echo=FALSE}
+img <- readPNG("figures/LassoRidge.png")
+ grid.raster(img)
+```
+<\center>
+The figure is from page 71 of ESL. 
+
+## Interesting properties
+Here are some properties of the lasso regression:
+
+* Due to the presence of the absolute value in the penalization function, there is no explicit solution for $\hat{\boldsymbol{\beta}}^{\text{ lasso}}$. To obtain it, one has to use some numerical methods.
+* Lasso regression estimator is not a linear estimator. There is no $\mathbf{H}$ such that $\hat{\mathbf{y}}=\mathbf{H}y$.
+
+Here is a table resuming the history of algorithms that have been used for lasso regression:
+
+|     Year   |  Algorithm | Operations
+|:-------------:|:------:|:------:|
+|    1996        | Quadratic programming | $O(n2^{p})$
+|    2003       |   LARS | $O(np^{2})$
+|    2008        |  Coordinate decent | $O(np)$
+
+
+## Example using R: prostate
+
+The following code is from the course [BST 764](http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes.html) of Patrick Breheny. This is a study that examined the correlation between the level of prostate specific antigen and a number of clinical measures in men who were about to receive a radical prostatectomy. Here are the profiles of lasso coefficients as $\lambda$ varies:
+
+```{r, fig.width=9, message=FALSE, warning=FALSE}
+## Prostate data
+set.seed(1)
+require(glmnet)
+require(ElemStatLearn)
+library(MASS)
+library(broom)
+library(ggplot2)
+data(prostate)
+prostate <- prostate[,-ncol(prostate)]
+fit <- lm.ridge(lpsa~.,prostate,lambda=seq(0,100,len=501))
+X <- model.matrix(lpsa~0+.,prostate)
+y <- prostate$lpsa
+fit <- glmnet(X,y)
+cvfit <- cv.glmnet(X,y)
+par(mfrow=c(1,2))
+## Ridge
+lam <- c(0,exp(seq(log(0.01),log(1e8),len=201)))
+fit <- lm.ridge(lpsa~.,prostate,lambda=lam)
+l <- apply(coef(fit)[,-1]^2,1,sum)
+s <- l/max(l)
+matplot(c(s,0),rbind(coef(fit)[,-1],0),type="l",lwd=2,lty=1,col="slateblue",xlab="",ylab="Coefficients",xlim=c(0,1.15),ylim=c(-0.1,0.8),main="Ridge")
+text(1.1,coef(fit)[1,-1],labels=colnames(X),cex=0.8)
+mtext(expression(sum(beta[j]^2)/max(sum(beta[j]^2))),1,line=3)
+
+## Lasso
+cvfit <- cv.glmnet(X,y,alpha=1)
+fit <- glmnet(X,y,lambda.min=0,nlambda=501)
+l <- apply(abs(coef(fit)[-1,]),2,sum)
+s <- l/max(l)
+matplot(s,t(as.matrix(coef(fit)[-1,])),type="l",lwd=2,lty=1,col="slateblue",xlab="",ylab="Coefficients",xlim=c(0,1.15),ylim=c(-0.1,0.8),main="Lasso")
+text(1.1,coef(fit)[-1,length(fit$lambda)],labels=colnames(X),cex=0.8)
+mtext(expression(sum(abs(beta[j]))/max(sum(abs(beta[j])))),1,line=3)
+```
+
+Let's use cross-validation to choose $\lambda$:
+```{r, fig.width=5, message=FALSE, warning=FALSE}
+plot(cvfit,xlab=expression(ln(lambda)))
+log(cvfit$lambda.min, base = exp(1))
+log(cvfit$lambda.1se, base = exp(1))
+coef(fit,s=cvfit$lambda.min)
+```
+
+The $\lambda_{min}$ value corresponds to $0.0325$. It is represented by the left vertical line in the previous plot. If we put the coefficients of $\mathbf{\beta}$ according to OLS, ridge and lasso, we obtain:
+
+|     Method   |  lcavol | lweight |age | lbph | svi |  lcp  | gleason | pgg45 
+|:----------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
+| Ordinary Least Squares | 0.5643| 0.6220| -0.0212| 0.0967| 0.7617| -0.1061| 0.0492 |0.0045 |
+| Ridge| 0.4949| 0.6050| -0.0169| 0.0863| 0.6885| -0.0420| 0.0634| 0.0034 |
+| Lasso| 0.5057| 0.5387| -0.0074| 0.0585| 0.5855| .| .| 0.0022 |
+
+A dot (.) in a cell means that the variable have been excluded from the model. As you may have noticed, most of the coefficients of the lasso regression are closer to zero if compared to those of ridge regression. It can be explained by the fact that in this case, the coefficients are close to zero. Thus, the $\ell^{1}$ penalization is stronger than the $\ell^{2}$ penalization.  
+
+## Conclusion
+The lasso regression shares a lot of caracteristics with ridge regression. Both are an optimization problem under a given constraint. Also, for both cases, by increasing the value of the tuning parameter $\lambda$, the bias increases and the variance decreases. In fact, the value of $\lambda$ controls the strength of the $\ell_{1}$ penalty. Briefly, the two main qualities of lasso are that the estimates have a good mean-square error and that it makes it possible to proceed to variable selection.
+
+## References
+* The lasso,
+  Patrick Breheny,
+  2011
+* The Elements of Statistical Learning.,
+  Trevor Hastie, Robert Tibshirani & Jerome Friedman,
+  2009
+* PennState Eberly College of Science.,
+  Applied Data Mining and Statistical Learning: STAT 897D (online),
+  [Link towards the site](https://onlinecourses.science.psu.edu/stat857/node/155) (Visited on February 1st 2016)
