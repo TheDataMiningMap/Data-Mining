@@ -1,0 +1,275 @@
+---
+title: "Logistic regression"
+author: "Louis-Marc Mercier"
+date: "June 2016"
+output: html_document
+---
+
+## Introduction
+ In the previous documents, we have been working on different types of regression.The regression's purpose is to produce an estimate $\hat{y}\in\mathbb{R}$. However, there are a lot of situations in which we would like to obtain a discrete variable as an output instead of a continuous output. These type of problems are knowned as *classification problems*. In particular there are many situations where we have binary outputs (it rains in Montreal on a given day or it does not, a person carries a disease or does not, etc.). We dispose of explanatory variables and some of them could be coutinuous. How can we solve such a problem? Truth be told that there are many ways to treat classifications problems. In this document, we will explore the logistic regression. Logistic regression is a classic method for classification problems with binary outcomes.
+ 
+## First try: use least squares
+
+An attractive idea at first sight would be to use least squares approach (multiple linear regression parameters). The idead would be to minimize:
+$$SS(\boldsymbol{\beta})=(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})$$
+Let $\mathbf{x}_{i}\in\mathbb{R}^{k+1}$ denotes predictor measurements, and $y_{i}\in\mathbb{R}$ discrete outcomes. We could then use a decision rule for a given threshold $b$:
+
+$$
+\hat{f}(\mathbf{x}) = \left\{
+        \begin{array}{ll}
+            0 & \quad \hat{\boldsymbol{\beta}}^{\top}\mathbf{x} < b\\
+            1 & \quad \hat{\boldsymbol{\beta}}^{\top}\mathbf{x} \ge b
+        \end{array}
+    \right.
+$$
+
+However, this approach comports a few problems.
+
+* Statistical inference results can not be use, because these are based on a model in which the outcome is continuously distributed.
+* This method can not be use for more than two classes.
+* It is hard to interpret $\hat{\boldsymbol{\beta}}$.
+* A small change in $\boldsymbol{\beta}$ can sometimes cause the output to completely flip. Here is a graphic to show it $\big(\mathbf{Z}=\boldsymbol{\beta}^{\top}\mathbf{x}_{i}-b \big)$:
+
+<center>
+```{r results='hide', message=FALSE, warning=FALSE, echo=FALSE}
+ library(png)
+ library(grid)
+```
+
+```{r fig.width=3, fig.height=2, message=FALSE, cache=FALSE, echo=FALSE}
+ img <- readPNG("figures/stepFunction.png")
+ grid.raster(img)
+```
+</center>
+
+(Figure from [Using neural nets to recognize handwritten digits](http://neuralnetworksanddeeplearning.com/chap1.html))
+
+## Logistic model 
+Let's consider classification problems with only two classes, for simplicity. Guessing simply by "yes" or "no" can be a little crude...particularly if the decision rule is not perfect. The idea is to use a probabilistic model. This model will takes noise into account and will gives us more than a binary output. 
+
+Some explanatory variables are given and we have to predict the output. Thus, an interesting model would be of the form $Pr(Y\lvert X)$. This would tell us about the certainty of our predictions. For example, if our model says that there's a 52% chance of rain and it
+doesn't rain, that's better than if we have said there was a 98% chance of rain.
+
+Let's consider two classes and call them "0" and "1". We can consider $Y$ as an indicator variable (thus, we have that $Pr(Y = 1) = E[Y]$). Similarly, we have that $Pr(Y=1\lvert X=x)=E[Y \lvert X=x]$. Now, we want to solve this problem by using multiple linear regression.
+
+A intuitive idea would be to let $p(x)$ be a linear function of $x$. However, the problem is that the probability must be between 0 and 1 and a linear function is unbounded. To solve this issue, we could try to use $\text{log}(p(x))$ instead. By doing so, we have that
+changing an input variable multiplies the probability by a fixed amount. Unfortunately, the logarithm function is only unbounded in one direction. Thus, the easiest transformation (with an unbounded range) is the **logistic transformation** $\text{log}(\frac{p}{1-p})$. Formally, the logistic regression model is expressed in the following way:
+
+$$\text{log}\Big(\frac{p(\mathbf{x})}{1-p(\mathbf{x})}\Big)=\boldsymbol{\beta}^{\top}\mathbf{x}$$
+
+Solving for $p$, we obtain:
+
+$$p(\mathbf{x})=\frac{\mathrm{e}^{ \boldsymbol{\beta}^{\top}\mathbf{x}}}{1+\mathrm{e}^{ \boldsymbol{\beta}^{\top}\mathbf{x}}}=\frac{1}{1+\mathrm{e}^{ -\boldsymbol{\beta}^{\top}\mathbf{x}}}$$
+
+To minimize the misclassification rate, we will predict $Y=1$ when $p\geq 0.5$ and $Y=0$ when $p<0.5$. For $p \geq 0.5$, we get:
+
+$$\frac{1}{1+\mathrm{e}^{ -\boldsymbol{\beta}^{\top}\mathbf{x}}} \geq 0.5 \Leftrightarrow \mathrm{e}^{ -\boldsymbol{\beta}^{\top}\mathbf{x}} \leq 1  \Leftrightarrow \boldsymbol{\beta}^{\top}\mathbf{x} \geq 0 $$
+
+Thus, our decision rule would be the following one:
+
+$$
+\hat{f}(\mathbf{x}) = \left\{
+        \begin{array}{ll}
+            0 & \quad \hat{\boldsymbol{\beta}}^{\top}\mathbf{x} < 0\\
+            1 & \quad \hat{\boldsymbol{\beta}}^{\top}\mathbf{x} \geq 0
+        \end{array}
+    \right.
+$$
+
+This correspond to a *linear classifier*! The decision boundary is $\hat{\boldsymbol{\beta}}^{\top}\mathbf{x}=0$. Logistic regression is a very commonly used tool for classification problem. 
+
+## Maximum likelihood estimation
+
+Logistic regression predicts probabilities rather than only classes. Thus, we can estimate the parameters by using likelihood. For each observation, we have a vector of features denoted $\mathbf{x}_{i}$ and an observed class $y_{i}$. The probability associated with class $y_{i}=1$ is $p$ and $1-p$ for $y_{i}=0$. If we assumed the independance of the $n$ observations, we obtain the following expression to maximize:
+
+$$ L(\boldsymbol{\beta}) = \prod_{i=1}^{n} p(\mathbf{x}_{i})^{y_{i}}(1-p(\mathbf{x}_{i}))^{1-y_{i}} $$
+
+To simplify this, we will maximize the log-likelihood:
+
+$$ \ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} y_{i}\text{log}p(\mathbf{x}_{i}) + (1-y_{i})\text{log}(1-p(\mathbf{x}_{i})) =  \sum_{i=1}^{n} \text{log}(1-p(\mathbf{x}_{i})) + y_{i}\text{log}\Big(\frac{p(\mathbf{x}_{i})}{1-p(\mathbf{x}_{i})}\Big) = \sum_{i=1}^{n} \text{log}(1-p(\mathbf{x}_{i})) + y_{i}(\boldsymbol{\beta}^{\top}\mathbf{x}_{i})) $$
+
+$$ \Rightarrow \ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} -\text{log}(1+\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}) + y_{i}(\boldsymbol{\beta}^{\top}\mathbf{x}_{i})) $$
+
+We obtain $\hat{\boldsymbol{\beta}}$ by differentiating $\ell (\boldsymbol{\beta})$ with respect to $\boldsymbol{\beta}$:
+
+$$ \frac{\text{d}\ell}{\text{d}\boldsymbol{\beta}}=\sum_{i=1}^{n} -\frac{\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}}{1+\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}}\mathbf{x}_{i} + y_{i}\mathbf{x}_{i}=\sum_{i=1}^{n}
+\Big(y_{i} - \frac{\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}}{1+\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}}  \Big)\mathbf{x}_{i} = \sum_{i=1}^{n}
+(y_{i} - p(\mathbf{x}_{i}))\mathbf{x}_{i} $$
+
+Unfortunately, this is a transcendental equation and there is no closed-form solution. A numerical approximation is neccesary. Common methods are Newton's method and iteratively re-weighted least squares.
+
+## The danger of linearly separable data
+
+A great danger about using maximum likelihood to fit logistic regression is that it can work pretty badly when data can be linearly separable. In fact, we have that to make the likelihood high, $p(\mathbf{x}_{i})$ must be large when $y_{i}=1$ and $p(\mathbf{x}_{i})$ must be small when $y_{i}=0$. Let $\boldsymbol{\beta}^{\star}$ be the set of parameters such that the training data is perfectly classifies. If we define $\boldsymbol{\beta}^{\star\star}=c\cdot\boldsymbol{\beta}^{\star}$ by $c>1$, we obtain the same classification of the observations (check the classification rule to convince yourself). However, for each observation, the predicted probability is getting closer to $0$ (if $p<0.5$) or $1$ (if $p\geq 0.5$). Thus, we obtain a higher likelihood. Let's prove it!
+
+### Proof
+
+Remember that we have:
+
+$$  \ell(\boldsymbol{\beta}) = \sum_{i=1}^{n} -\text{log}(1+\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}) + y_{i}(\boldsymbol{\beta}^{\top}\mathbf{x}_{i})) $$
+ 
+ We can see that the likelihood is the sum of contributions of $n$ observations. To solve it, our strategy is to take a contribution of an arbitrary observation $x_{i}$ $\big(i\in\{1,...,n\}\big)$ and show that this contribution is bigger with $\boldsymbol{\beta}^{\star\star}$ compared to $\boldsymbol{\beta}^{\star}$. Mathematically, we want to show that:
+ 
+ $$l(\boldsymbol{\beta}^{\star\star})-l(\boldsymbol{\beta}^{\star})\geq 0 \Leftrightarrow \Big(c\cdot y_{i}\boldsymbol{\beta}^{\top}\mathbf{x}_{i} - \text{log}(1+\mathrm{e}^{c\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}) \Big) - \Big(  y_{i}\boldsymbol{\beta}^{\top}\mathbf{x}_{i} - \text{log}(1+\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}) \Big) \geq 0$$
+ 
+Let's set $f(c)=(c\cdot y_{i}\boldsymbol{\beta}^{\top}\mathbf{x}_{i} - \text{log}(1+\mathrm{e}^{c\boldsymbol{\beta}^{\top}\mathbf{x}_{i}})) - (  y_{i}\boldsymbol{\beta}^{\top}\mathbf{x}_{i} - \text{log}(1+\mathrm{e}^{\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}))$. We want to prove that $f(c)\geq 0$ for $c>1$. Let's take the derivative of $f(c)$:
+
+$$\frac{\text{d}f}{\text{d}c}=y_{i}\boldsymbol{\beta}^{\top}\mathbf{x}-\frac{\mathrm{e}^{c\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}\cdot\boldsymbol{\beta}^{\top}\mathbf{x}}{1+\mathrm{e}^{c\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}}=
+\boldsymbol{\beta}^{\top}\mathbf{x}\Bigg(y_{i}-\frac{\mathrm{e}^{c\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}}{1+\mathrm{e}^{c\boldsymbol{\beta}^{\top}\mathbf{x}_{i}}} \Bigg)$$
+
+* By the decision boundary, if $y_{i}=1$, then $\boldsymbol{\beta}^{\top}\mathbf{x}\geq 0$. 
+* If $y_{i}=0$, then $\boldsymbol{\beta}^{\top}\mathbf{x}<0$.
+
+For the case $y_{i}=1$, the derivative is a product of non-negative terms...which means that the derivative is non-negative in this case. For the case $y_{i}=0$, the derivative is a product of non-positive terms...which implies that the derivative is non-negative for this case. Thus, the derivative is non-negative for both cases! It means that $f(c)$ is an increasing function with respect to $c$. If we set $c=1$, we obtain $f(c)=0$. Thus, $f(c)> 0 \quad \forall c\ge 1$ $\blacksquare$
+ 
+ This is a problem, because it means that we can increase the likelihood as much as we want by increasing the value of $c$ \big($\ell(\boldsymbol{\beta})\rightarrow\infty$ as $c\rightarrow\infty$\big).
+
+## Logistic regression with more than two classes
+
+Let's set some conventions to clarify the generalization:
+
+* Let $Y$ be a random variable that fall on one of $K$ classes.
+* Number the classes $1,...,K$.
+* $\pi_{ik}=Pr(Y_{i}=k\lvert \mathbf{x})$ denotes the probability that the $i$-th individual's outcome belongs to the $k$-th class.
+
+The generalization is called the *multinomial model* and the fitted class probabilities for an observation with explanatory variable vector $\mathbf{x}$ are therefore:
+
+$$ 
+\hat{\pi}_{1}=\frac{\mathrm{e}^{\hat{\boldsymbol{\beta}}_{1}^{\top}\mathbf{x}}}{1+\sum_{j=1}^{K-1}\mathrm{e}^{\hat{\boldsymbol{\beta}}_{j}^{\top}\mathbf{x}}}   $$
+
+$$ 
+\hat{\pi}_{2}=\frac{\mathrm{e}^{\hat{\boldsymbol{\beta}}_{2}^{\top}\mathbf{x}}}{1+\sum_{j=1}^{K-1}\mathrm{e}^{\hat{\boldsymbol{\beta}}_{j}^{\top}\mathbf{x}}} 
+$$
+
+$$ \vdots  $$
+
+$$ 
+\hat{\pi}_{K}=\frac{1}{1+\sum_{j=1}^{K-1}\mathrm{e}^{\hat{\boldsymbol{\beta}}_{j}^{\top}\mathbf{x}}} 
+$$
+
+One can notice that $\hat{\pi}_{K}$ is not estimated, because we know that $\sum_{j=1}^{K} \hat{\pi}_{j} = 1$. We predict the class according to the following rule:
+
+$$ \hat{f}(\mathbf{x})= \underset{j=1,...,K}{\text{argmax}}\quad \hat{\pi}_{j}  $$
+
+## Example using R: The Donner party
+
+The following example is completely taken from the course *BST 760 Advanced Regression* given by Patrick Breheny in 2013. The document is named [Logistic Regression](http://web.as.uky.edu/statistics/users/pbreheny/760/S13/notes/2-21.pdf). The dataset is about the survival of the members of the Donner party. Here is a small description from the Breheny's document (page 5-6):
+
+>Our example data set from today involves the survival of the
+members of the Donner party. In the spring of 1846, a group of American pioneers set out
+for California. However, they suffered a series of setbacks and did not arrive
+at the Sierra Nevada mountains until October. While crossing the mountains, they became trapped by an early snowfall, and had to spend the winter there.Conditions were harsh, food supplies ran low, and 40 of the 87 members of the Donner party died before they were finally
+rescued. The data set donner.txt contains the following information regarding the adult (over 15 years old) members of the Donner party:
+
+* Age
+* Sex
+* Status: Died or Survived
+
+We can use the glm function in R to fit a logistic model:
+
+```{r, fig.width=5, message=FALSE, warning=FALSE}
+## Data
+donner <- read.delim("http://web.as.uky.edu/statistics/users/pbreheny/760/data/donner.txt")
+
+## With female as reference group
+Female <- 1*(donner$Sex=="Female")
+fit <- glm(Status~Age*Female,donner,family=binomial)
+summary(fit)
+```
+
+Let's focus on survival probabilities. The model that we want to interpret is of the following form:
+
+$$\text{log}\Big(\frac{\pi}{1-\pi}\Big)=\beta_{0}+\beta_{1}\text{Age}+\beta_{2}\text{Female}+\beta_{3}\text{Age}\cdot\text{Female}$$
+
+If we want to estimate the survival probability for a 20 years old man, we only have to substituate his features in the previous model:
+
+$$\text{log}\Big(\frac{\hat{\pi}}{1-\hat{\pi}}\Big)=0.31834-0.03248\cdot 20=-0.3313 \Rightarrow \hat{\pi}=\frac{\mathrm{e}^{-0.3313}}{1+\mathrm{e}^{-0.3313}}=0.418$$
+
+Sometimes, you could be interested to find confidence intervals for some predictions. Let's say that you want to estimate the survival probabilities of 6 people (3 men, 3 women) of 20,40 and 60 years old.
+
+```{r, fig.width=5, message=FALSE, warning=FALSE}
+fit <- glm(Status~Age*Sex, donner, family=binomial)
+New <- data.frame(Age=rep(c(20,40,60),2), Sex=c(rep("Male",3),rep("Female",3)))
+pred <- predict(fit, newdata=New, se.fit=TRUE)
+CI <- cbind(pred$fit - qnorm(.975)*pred$se, pred$fit + qnorm(.975)*pred$se)
+exp(CI)/(1+exp(CI))
+```
+
+We can make this more interesting by visualizing linear predictions and the survival probabilities (for each sex) with a confidence band:
+
+```{r,fig.width=5, fig.height=3, message=FALSE, warning=FALSE}
+## Visreg
+library(visreg)
+visreg(fit, "Age", by="Sex")
+visreg(fit, "Age", by="Sex", scale="response")
+```
+
+These graphics show that young women seem to have better survival probability than young men. However, as age increases, the survival probability of women decreases more quickly than for men. At a certain age, it seems that older men are more likely to survive than older women.
+
+### Example using R: Titanic
+
+The following description is provided from  the Kaggle project [Titanic Machine: Learning from disaster](https://www.kaggle.com/c/titanic). The code is strongly inspired from the following walkthrough:  [Predicting Multiple Discrete Values with Multinomials, Neural Networks and the {nnet} Package](http://amunategui.github.io/multinomial-neuralnetworks-walkthrough/index.html) of Manuel Amunategui.
+
+>On April 15, 1912, the Titanic sank after colliding with an iceberg. The sinking of the Titanic is one of the most infamous shipwrecks in history. One of the major reasons of such loss of life was that there were not enough lifeboats for everyone. Some luck was involved in surviving the sinking. However, some people were more likely to survive than others, such as women, children, and the upper-class.
+
+The purpose of this section is to developp a predictive model to guess who would survive. Logistic regrsssion will be our model and the error criteria will be AUC. The area under an ROC curve (AUC) is a criterion used in many applications
+to measure the quality of a classification algorithm. An AUC value of 0 corresponds to the worse model that you can imagine and a value of 1 corresponds to a perfect classifier. First, let's do the following steps: import the dataset, create a new variable named "Title", do imputation on NA values and  check if the data is skewed:
+
+```{r,fig.width=5, fig.height=3, message=FALSE, warning=FALSE}
+titanicDF <- read.csv('http://math.ucdenver.edu/RTutorial/titanic.txt',sep='\t')
+titanicDF$Title <- ifelse(grepl('Mr ',titanicDF$Name),'Mr',
+ifelse(grepl('Mrs ',titanicDF$Name),'Mrs',ifelse(grepl('Miss',titanicDF$Name),
+'Miss','Nothing'))) 
+titanicDF$Age[is.na(titanicDF$Age)] <- median(titanicDF$Age, na.rm=T)
+prop.table(table(titanicDF$Survived))
+```
+
+This tells us that 34.27% of our data contains survivors of the Titanic. This is an important step! If the proportion was smaller than 15%, it would be considered a rare event and would be more challenging to model. Now, let's clean the dataframe:
+
+```{r,fig.width=5, fig.height=3, message=FALSE, warning=FALSE}
+# miso format
+titanicDF <- titanicDF[c('PClass', 'Age',    'Sex',   'Title', 'Survived')]
+titanicDF$Title <- as.factor(titanicDF$Title)
+titanicDF$Sex <- as.integer(titanicDF$Sex)
+str(titanicDF)
+```
+
+Let's split the dataset into a train set and a set train. We choose to put 75% of the observations in the train set: 
+
+```{r,fig.width=5, fig.height=3, message=FALSE, warning=FALSE}
+set.seed(1234)
+library(nnet)
+library(pROC)
+library(caret)
+
+splitIndex <- createDataPartition(titanicDF$Survived, p = .75, list = FALSE, times = 1)
+trainDF <- titanicDF[splitIndex,]
+testDF <- titanicDF[-splitIndex,]
+
+survival <- multinom(Survived~., data=trainDF, maxit=500, trace=T)
+preds1 <- predict(survival, type="probs", newdata=testDF)
+preds2 <- predict(survival, type="class", newdata=testDF)
+PR=postResample(testDF$Survived,preds2)
+MCR=multiclass.roc(testDF$Survived, as.numeric(preds1) , levels=c(0, 1))
+print(PR)
+print(MCR)
+rocobj <- roc(as.numeric(testDF$Survived),as.numeric(preds1))
+plot.roc(rocobj)
+```
+
+The postResample function shows that our model predicts well 81% of the time. In our case, the AUC is 0.857...which corresponds to a good model!
+
+## References
+
+* Carnegie Mellon University.,
+  Advanced Data Analysis: 36-402,
+  [Advanced Data Analysis from an Elementary Point of View](http://www.stat.cmu.edu/~cshalizi/ADAfaEPoV/ADAfaEPoV.pdf) (Visited on June 22th 2016),
+  Cosma Shalizi
+* Carnegie Mellon University.,
+  Advanced Methods for Data Analysis: 36-402/36-608 (Spring 2014),
+  [Logistic Regression](http://www.stat.cmu.edu/~ryantibs/advmethods/notes/logreg.pdf), (Visited on June 22th 2016)
+  Ryan Tibshirani
+* University of Kentucky.,
+  Advanced Regression: BST 760 (Spring 2013),
+  [Logistic Regression](http://web.as.uky.edu/statistics/users/pbreheny/760/S13/notes/2-21.pdf) (Visited on June 22th 2016),
+  Patrick Breheny
