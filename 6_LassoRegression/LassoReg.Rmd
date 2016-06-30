@@ -45,7 +45,7 @@ library(grid)
 img <- readPNG("figures/LassoRidge.png")
  grid.raster(img)
 ```
-<\center>
+</center>
 The figure is from page 71 of ESL. 
 
 ## Interesting properties
