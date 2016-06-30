@@ -1,0 +1,232 @@
+---
+title: "Ridge regression"
+author: "Louis-Marc Mercier"
+date: "January 2016"
+output: html_document
+---
+
+## Introduction
+ In the document about [penalization](https://en.wikipedia.org/wiki/Penalty_method), theory has been developed to solve many problems connected to linear regression. It turns out that problems such as high variance in estimators, multicollinearity and ill-conditioned $(\mathbf{X}^{\top}\mathbf{X})$ can all be solved by using some penalization on our loss function. The combination of these two elements has been named "objective function". An interesting penalized regression method is *ridge regression*. The following content aims to introduce you to ridge regression and  show you its great properties.
+ 
+**Packages Used** : glmnet, ElemStatLearn, MASS, broom, ggplot2, visreg, tidyr.
+
+## Conventions
+Here are some conventions that need to be applied when calculating the ridge regression coefficients:
+
+* The design matrix $\mathbf{X}$ has to be standardized (mean 0 and unit variance) .
+* For the cost function, $\boldsymbol{\beta}$ is the classical vector of regression coefficients, but without the intercept $\beta_{0}$.
+* $\mathbf{y}$ is assumed to be centered.
+
+In general, these conventions are enforced by statistical softwares. However, if someone desires to program a ridge regression package, he will have to implement these conventions.
+
+## Definition 
+The ridge regression estimator is obtained by minimizing the following cost function: 
+$$S(\boldsymbol{\beta})=(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})+\lambda\boldsymbol{\beta}^{\top}\boldsymbol{\beta} \quad\text{with}\quad \lambda\in[0,\infty[$$
+The computations to obtain $\boldsymbol{\beta}^{\text{ ridge}}$ are very similar to the OLS's ones. Let's find this estimator! First, we set $\frac{dS}{d\boldsymbol{\beta}^{\top}}=0$:
+$$\frac{dS}{d\boldsymbol{\beta}}=\frac{d}{d\boldsymbol{\beta}}\Big[(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})+\lambda\boldsymbol{\beta}^{\top}\mathbf{I}\boldsymbol{\beta}\Big]=-2\mathbf{X}^{\top}\mathbf{y}+2\mathbf{X}^{\top}\mathbf{X}\boldsymbol{\beta}+2\lambda\mathbf{I}\boldsymbol{\beta}=0$$
+The derivative of the penalty is pretty straightforward to calculate. For the derivative of the loss function, we remember the results obtained in the [linear regression](https://en.wikipedia.org/wiki/Linear_regression) document. We obtain the following linear system of equations:
+$$\mathbf{X}^{\top}\mathbf{X}\boldsymbol{\beta}+\lambda\mathbf{I}\boldsymbol{\beta}=\mathbf{X}^{\top}\mathbf{y} \quad (i)$$
+Again, if we suppose that $(\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I})$ is invertible, then we obtain the following solution:
+$$\hat{\boldsymbol{\beta}}^{\text{ ridge}}=(\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I})^{-1}\mathbf{X}^{\top}\mathbf{y}$$
+You will see that $(\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I})^{-1}$ always exists. You should also be able to prove that $\hat{\boldsymbol{\beta}}^{\text{ ridge}}$ corresponds to a global minimum.
+
+## Interpretation
+The ridge regression estimator is obtained from a constrained optimization problem. The penalty is based on the $\ell^{2}$-norm and it shrinks the regression coefficients. By doing so, it introduces a bias, but it reduces the variance of the coefficients! If the regression coefficients (which decrease the value of the loss function) are big, they will increase the value of the penalty. As a result, the value of the objective function will not necessarily decrease.
+
+It is important to understand that $\lambda$ controls the amount of shrinkage. The larger $\lambda$ is, the greater the shrinkage is. In fact, we have that:
+
+* As $\lambda\rightarrow 0,  \hat{\boldsymbol{\beta}}^{\text{ ridge}}\rightarrow\hat{\boldsymbol{\beta}}^{\text{ OLS}}$
+* As $\lambda\rightarrow\infty,  \hat{\boldsymbol{\beta}}^{\text{ ridge}}\rightarrow\mathbf{0}$
+
+This is pretty intuitive if you considered $\lambda$ varying in the objective function. If $\lambda=0$, this is the objective function of the ordinary linear regression. If $\lambda\rightarrow\infty$, the contribution of the penalty will overwhelm the loss function. Thus, the most efficient way to minimize $\lambda\boldsymbol{\beta}^{\top}\boldsymbol{\beta}$ as  $\lambda\rightarrow\infty$ is to shrink $\boldsymbol{\beta}$ toward the null vector. You can understand that the cost function penalizes big values of regression coefficients. We consider smaller values as more "realistic".
+
+For optimizing the cost function, the intercept $\beta_0$ has not been considered. If it was included, the situation would come to down to trying to shrink the intercept toward zero. It only makes sense if you think that in this situation there should not be any intercept.
+
+Let's consider a ridge regression problem in which we only have $\beta_{0},\beta_{1}$ and $\beta_{2}$. Our optimization problem can also be expressed by:
+
+$$ \underset{\boldsymbol{\beta}}{\text{min}}\quad (\mathbf{y}-\mathbf{X}\boldsymbol{\beta})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\beta}) \quad \text{s.t} \quad \sum_{i=1}^{2}\beta_{i}^{2}<t$$
+
+For this situation, the optimization problem can be interpreted geometrically as:
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=FALSE}
+library(png)
+library(grid)
+```
+<center>
+```{r fig.width=5, fig.height=3, message=FALSE, cache=FALSE, echo=FALSE}
+img <- readPNG("figures/visuel2.png")
+ grid.raster(img)
+```
+<\center>
+
+The blue zone is the constraint area.  This region is a disk because $\beta_{1}^{2}+\beta_{2}^{2}<t$ corresponds to the equation of a disk. Constrained optimization theory deems that the solution occurs at the point on which a contour curve (an ellipse) is tangent to the constraint region (blue circle). 
+
+## Special case: orthogonal design matrix
+If the design matrix is orthogonal (i.e $\mathbf{X}^{\top}\mathbf{X}=\mathbf{I}$), than the ridge regression estimator is:
+$$\hat{\boldsymbol{\beta}}^{\text{ ridge}}=\frac{1}{1+\lambda}\hat{\boldsymbol{\beta}}^{\text{ OLS}}$$
+This example illustrates the idea of the shrinkage due to large values of $\lambda$. You can clearly see that increasing the value of $\lambda$ shrinks the ridge regression coefficients toward zero.
+
+## Solving the multicollinearity problem
+You may remember that $\hat{\boldsymbol{\beta}}^{\text{ OLS}}$ exists and is a global minimum if $\mathbf{X}$ is a full-rank matrix and $\mathbf{X}^{\top}\mathbf{X}$ is positive semi-definite. We assumed the full-rank property and it can be proved that the positive semi-definite property is always satisfied. However, the first criteria is equivalent to the absence of multicollinearity among our explanatory variables...which is not guaranteed. 
+
+However, for ridge regression, $(\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I})^{-1}$ always exists! There are many proofs for that statement. Let's do an easy one:
+
+#### Theorem
+The eigenvalues of $\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I}$ equal $\lambda_{i}+\lambda$ where $\lambda_{i}$'s are the eigenvalues of $\mathbf{X}^{\top}\mathbf{X}$.
+
+#### Proof
+
+ Let $A=\mathbf{X}^{\top}\mathbf{X}$. Finding the eigenvalues implies to find the solutions of the characteristic polynomial, i.e to solve:
+ 
+ \[  \vert \mathbf{A}-\hat{\lambda} \mathbf{I} \vert = 0  \Leftrightarrow  
+  \begin{vmatrix}
+  a_{11}-\hat{\lambda} & a_{12} &...& a_{1n} \\ 
+  a_{21} & a_{22}-\hat{\lambda} &...&a_{2n} \\ 
+  \vdots &\vdots & \ddots & \vdots \\ 
+  a_{n1} & a_{n2} & ... & a_{nn}-\hat{\lambda}
+  \end{vmatrix}
+  =0 \]
+ 
+ Let's call the solutions for $\hat{\lambda}$: $\lambda_{1},\lambda_{2},...,\lambda_{n}$. Now, if we are looking for the eigenvalues of $\mathbf{A}+\lambda \mathbf{I}$, we must look for the solutions of:
+ 
+ \[  \vert \mathbf{A}-(\hat{\lambda}-\lambda) \mathbf{I} \vert = 0  \Leftrightarrow  
+   \begin{vmatrix}
+   a_{11}-(\hat{\lambda}-\lambda) & a_{12} &...& a_{1n} \\ 
+   a_{21} & a_{22}-(\hat{\lambda}-\lambda)  &...&a_{2n} \\ 
+   \vdots &\vdots & \ddots & \vdots \\ 
+   a_{n1} & a_{n2} & ...  & a_{nn}-(\hat{\lambda}-\lambda)
+   \end{vmatrix}
+   =0 \]
+
+Let's set $u=\hat{\lambda}-\lambda$. The solutions are exactly the same as the previous ones, i.e $u:\lambda_{1},\lambda_{2},...,\lambda_{n}$. Because these are solutions for $u$, we must isolate $\hat{\lambda}$ in $u$'s equation. The solutions are of the following form: $\hat{\lambda}=\lambda_{i}+\lambda$ for $i\in \{1,2,...,n\}$. $\quad \blacksquare$ 
+
+This theorem is important to keep in mind. For the ordinary linear regression, the matrix $\mathbf{X}^{\top}\mathbf{X}$ is positive semi definite. This is equivalent to saying that all the eigenvalues of $\mathbf{X}^{\top}\mathbf{X}$ are greater or equal to zero. Unfortunately, the presence of a null eigenvalue implies that the matrix is not invertible. In such a case, there will not be a unique solution. That's an important problem.
+
+However, ridge regression is our savior! By adding $\lambda\mathbf{I}$ (with $\lambda>0$) to $\mathbf{X}^{\top}\mathbf{X}$, we are increasing the values of each eigenvalue by $\lambda$. Thus, if there were some null eigenvalues, they will become strictly positive eigenvalues and the matrix will be invertible. In fact, solving the singularity problem was the main motivation for ridge regression when it was introduced in statistics (Hoerl and Kennard, 1970).
+
+## Properties
+
+* **Property 1**: For $\lambda\ge 0$, the variance of ridge regression estimate is:
+$$\text{Cov}(\hat{\boldsymbol{\beta}}^{\text{ ridge}})=\sigma^{2}\mathbf{W}\mathbf{X}^{\top}\mathbf{X}\mathbf{W} \quad \text{where } \mathbf{W}=(\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I})^{-1}$$
+* **Property 2**: The bias of the ridge regression estimate is:
+$$\text{Bias}(\hat{\boldsymbol{\beta}}^{\text{ ridge}})=-\lambda\mathbf{W}\hat{\boldsymbol{\beta}}$$
+* **Existence theorem**: There is always a $\lambda$ such that the $MSE$ of $\hat{\boldsymbol{\beta}}^{\text{ ridge}}$ is less than the $MSE$ of $\hat{\boldsymbol{\beta}}^{\text{ OLS}}$.
+* **Definition 1**: The projection matrix ("hat matrix") is defined as:
+$$\mathbf{H}_{\text{ ridge}}=\mathbf{X}(\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I})^{-1}\mathbf{X}^{\top}$$
+* **Definition 2**: The effective degree of freedom for ridge regression is defined as $\text{tr}(\mathbf{H}_{\text{ ridge}})$:
+$$\text{df}_{\text{ ridge}}=\text{tr}(\mathbf{H}_{\text{ ridge}})=\sum_{i=1}^{n}\frac{\lambda_{i}}{\lambda_{i}+\lambda} \quad \text{where $\lambda_{i}$ are the eigenvalues of $\mathbf{X}^{\top}\mathbf{X}$}$$
+
+## Selecting $\lambda$
+You may have noticed that we have been using $\lambda$ to explain ridge regression, but we never specified how to choose it. Unfortunately, there is not a unique and perfect "theoretical" way to do so. This is is still today an unsolved problem. There are many ways to find a good value of $\lambda$, but we will only focus on two. Here they are:
+
+* **Examine the ridge trace**: Plot the ridge regression coefficients versus $\lambda$ and choose the smallest value of $\lambda$ after which the values become stable:
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=FALSE}
+library(png)
+library(grid)
+```
+<center>
+```{r fig.width=5, fig.height=3, message=FALSE, cache=FALSE, echo=FALSE}
+img <- readPNG("figures/TraceLMM.png")
+ grid.raster(img)
+```
+<\center>
+
+In this example, the values of ridge regression coefficients seem to be very stable after $0.08$. Thus, by this criteria, we would choose $\lambda=0.08$. 
+
+* **Cross-validation**: It is considered by many as one of the simplest and most popular methods to estimate prediction error. We typically use the $K$-fold cross-validation. If you want to learn about cross-validation more deeply, I recommend you to consult the document [cross-validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics)). One could ask how to determine the number of folds. Unfortunately, the number of folds i.e $K$ is also an unsolved mystery.
+
+## Example using R: normal variables
+Let's create two vectors of normal variables.
+```{r, results='hide', message=FALSE, warning=FALSE}
+set.seed(1)
+x1 <- rnorm(20);
+x2 <- rnorm(20,mean=x1,sd=.01)
+cor(x1,x2)
+```
+
+There is some correlation between the two vectors. Let's check the coefficients of the OLS regression.
+```{r, fig.height = 2,fig.cap=""}
+y <- rnorm(20,mean=3+x1+x2)
+fit=lm(y~x1+x2)
+coef(fit)
+RSS_OLS=sum(fit$residuals^2)
+RSS_OLS
+RSS_RM=sum((y-3-x1-x2)^2)
+RSS_RM
+```
+
+The solution from the OLS estimation has a smaller RSS ($RSS\_OLS=10.72519$) than the "real model" ($RSS\_RM=12.84268$). Truth be told, solutions such that $\beta_{1}^{2}+\beta_{2}^{2}\approx 2$ should have a residual sum of squares near that of the real model. If we use the ridge regression for our problem, we obtain some interesting results.
+```{r, fig.height = 2,fig.cap=""}
+library(MASS)
+lm.ridge(y~x1+x2,lambda=1)
+```
+
+You can see that by using the ridge regression, our model is closer to the real model.
+
+## Example using R: prostate
+The following code if from the course [BST 764](http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes.html) of Patrick Breheny and from [Stack Overflow](http://stackoverflow.com/questions/26364665/how-to-perform-lm-ridge-summary). This is a study that examined the correlation between the level of prostate specific antigen and a number of clinical measures in men who were about to receive a radical prostatectomy. 
+```{r, message=FALSE, warning=FALSE}
+## Prostate data
+require(glmnet)
+require(ElemStatLearn)
+library(MASS)
+library(broom)
+library(ggplot2)
+library(tidyr)
+data(prostate)
+prostate <- prostate[,-ncol(prostate)]
+fit <- lm.ridge(lpsa~.,prostate,lambda=seq(0,100,len=501))
+```
+
+As you you can see, the tidy function provides a data frame that shows each combination of lambda and the explanatory variables. The glance function shows some interesting choices of $\lambda$ based on differents methods:
+```{r, fig.height = 3, message=FALSE, warning=FALSE}
+td <- tidy(fit)
+head(td)
+tail(td)
+g <- glance(fit)
+g
+```
+
+Now, let's plot how the coefficients of $\boldsymbol{\beta}$ vary by increasing $\lambda$:
+```{r, fig.width=5, fig.height = 3.5, message=FALSE, warning=FALSE}
+ggplot(td, aes(lambda, estimate, color = term)) + geom_line()
+```
+
+If you look carefully, you can notice that all the coefficients seem to converge to zero as lambda gets bigger (as $\lambda\rightarrow\infty,  \hat{\boldsymbol{\beta}}^{\text{ ridge}}\rightarrow\mathbf{0}$). Thus, this plot is in harmony with the ridge regression theory that we mentioned previously. The GCV is often considered to choose a good ridge parameter (see [Generalized Cross-Validation as a Method for choosing a Good Ridge Parameter](http://www.stat.wisc.edu/~wahba/ftp1/oldie/golub.heath.wahba.pdf) for more details):
+```{r, fig.width=5, fig.height = 3.5,fig.cap=""}
+ggplot(td, aes(lambda, GCV)) + geom_line() +
+    geom_vline(xintercept = g$lambdaGCV, col = "red", lty = 2)
+```
+
+If we base our decision on the GCV, we obtain the following coefficients:
+```{r, fig.width=4, fig.height = 4,fig.cap=""}
+fit2 <- lm.ridge(lpsa~.,prostate,lambda=g$lambdaGCV)
+fit.ols <- lm(lpsa~.,prostate)
+coef(fit2)
+coef(fit.ols)
+```
+
+Here is a table that summarizes the values of the coefficients by OLS and ridge. It is important to see that the coefficients of the ridge regression are smaller and to understand why:
+
+|     Method   |  lcavol | lweight |age | lbph | svi |  lcp  | gleason | pgg45 
+|:----------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
+| Ordinary Least Squares | 0.5643| 0.6220| -0.0212| 0.0967| 0.7617| -0.1061| 0.0492 |0.0045 |
+| Ridge| 0.4949| 0.6050| -0.0169| 0.0863| 0.6885| -0.0420| 0.0634| 0.0034 |
+
+## The dark side of ridge regression
+Despite all its beautiful properties, one has to know that ridge regression is not perfect. It also has some downsides. First, it has an heavy bias toward zero for large regression coefficients. Indeed, a $\ell^{1}$-norm penalization would constitute a lighter bias. Next, coefficients which do not really have an influence may be shrunk near zero. However, they are still in the model.
+
+## Conclusion
+Here are the key ideas that you must retain from this document. First, for any design matrix $\mathbf{X}$, the quantity $\mathbf{X}^{\top}\mathbf{X}+\lambda\mathbf{I}$ is always invertible. Thus, there is always a unique solution and it corresponds to a global minimum. Ridge regression allows for a trade-off between bias and variance. Ridge regression may lead to a biased estimator. However, it will decrease the variance of the ridge's regression coefficients and improve the quality of the predictions. There are many ways to choose $\lambda$. Nowadays, a very popular method is the cross-validation. I strongly recommend you to use it. Most importantly, the ridge regression solves multicollinearity, high variance and ill-conditioned $(\mathbf{X}^{\top}\mathbf{X})$ without the flaws of variable selection. Last but not least, the ridge regression has some downsides such as heavy bias and interpretability.
+
+## References
+* Penalized regression methods,
+  Patrick Breheny,
+  2011
+* The Elements of Statistical Learning.,
+  Trevor Hastie, Robert Tibshirani & Jerome Friedman,
+  2009
+* PennState Eberly College of Science.,
+  Applied Data Mining and Statistical Learning: STAT 897D (online),
+  [Link towards the site](https://onlinecourses.science.psu.edu/stat857/node/155) (Visited on February 1st 2016)
