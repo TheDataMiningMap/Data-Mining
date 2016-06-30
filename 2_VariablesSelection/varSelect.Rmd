@@ -1,0 +1,47 @@
+---
+title: "Variable selection"
+author: "Louis-Marc Mercier"
+date: "January 2016"
+output: pdf_document
+---
+# Introduction
+ Variables selection consists of regrouping a set of variables among our $k$ explanatory variables. There are many methods to do so. Some softwares even have automatic procedures to do it. These methods use criterias such as $AIC$, $BIC$, Mallow's CP and adjusted $R^{2}$. The purpose of this procedure is to obtain a new model with a better prediction accuracy and easier to interpret.
+
+## Example: A naïve way to select variables.
+You could argue that an interesting way to find the appropriate model for predictions would be to test all the possible models. In some way, you could be right. If you had a model with two, three or even four variables, you could build all these models and compare their $AIC$ or $BIC$. But what would you do if you have 10 variables...or even 30 variables!? Also, you could have some restrictions on the parameters!
+
+If you have 30 variables, then you will have 1 073 741 824 models. This is infeasible! 
+
+# Why should we do variable selection?
+
+## Prediction accuracy 
+* The ordinary least squares is a method which has low bias but large variance. Doing variable selection reduces the variance but increases the bias. This is done by shrinking or setting some coefficients to zero. The reduction of the number of explanatory variables decreases the multicollinearity in the model and decreases the variability of the estimator. It also improves the accuracy of the predictions.
+Don't forget that the variables that we want to remove are the ones which do not seem to have an important contribution!
+
+## Interpretation
+* Reducing the number of variables leads to a parsimonious model. This type of model is useful for many reasons. Indeed, it becomes easier to makes some predictions and prediction accuracy can improve. Also, we often like to have a subset to show the strongest effects.
+
+# Classical variable selection procedures
+
+## Forward selection
+* The initial model is a *null model*. In other words, it is model with only an intercept and no explanatory variables. Then, we fit $k$ regressions(one for each predictor) and we choose the explanatory variable of the regression with the smallest RSS(*Residual sum of squares*). Remember that:
+$$RSS=\mathbf{e}^{\top}\mathbf{e}=\sum_{i=1}^{n}(y_{i}-\hat{y}_{i})^{2}$$
+We continue this procedure with the remaining $k-1$ predictors until a stopping rule is satisfied.
+
+## Backward selection
+* We fit the full model and we remove the variable with the largest $p$-value. Logically, it should be the variable with the least contribution to the model. Again, we fit the model but with the $k-1$ predictors left and the explanatory variable with the biggest $p-value$ is excluded from the model. This approach is continued until some stopping rule is satisfied. For example, one could stop the procedure if all the $p-values$ are under a value fixed by the experimentator. 
+
+## Stepwise selection 
+* This method is a mix of the forward selection and the backward selection. Like with forward selection, we start with the null model and we add variables one by one in it. During this procedure, if any $p-value$ gets over the fixed value determined by the experimentator, it has to be removed from the model. This procedure should be continued until all the variables in the model have a $p-value$ under the fixed value and that all the variables outside of the model can't be added in the model without breaking the $p-value$ rule.
+
+# Conclusion
+It is important to understand that the final model that someone obtains is not unique. It is a result of the decision process of the statistician during his analysis. If some theorical knowledge or some link between the variables is well known, the procedures that we use should not be used blindly. It is the responsability of the statistician to choose the variables correctly...not the computer's!
+
+## References
+
+* Regression Analysis: Theory, Methods, and Applications.,
+  Ashish Sen & Muni Srivastava,
+  1990
+* The Elements of Statistical Learning.,
+  Trevor Hastie, Robert Tibshirani & Jerome Friedman,
+  2009
