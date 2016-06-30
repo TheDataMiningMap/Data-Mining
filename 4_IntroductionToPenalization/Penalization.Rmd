@@ -1,0 +1,70 @@
+---
+title: "Penalization"
+author: "Louis-Marc Mercier"
+date: "January 2016"
+output: pdf_document
+---
+
+## Introduction
+An important part of 20th-century statistics focused on [maximum likelihood estimation](https://en.wikipedia.org/wiki/Maximum_likelihood). As you may have seen, it has some nice properties that can be used to our advantage. A beautiful coincidence is that the *ordinary least squares*(OLS) estimator can also be obtained by the maximum likelihood estimation. Unfortunately, there can still be problems. Among the multiple problems that can rise, here are two major ones that one can have:
+
+1. High variance: When $k$ is large with respect to $n$ or when some explanatory variables are highly correlated, Var($\boldsymbol{\beta}$) is large.
+2. Ill-conditionned $(\mathbf{X}^{\top}\mathbf{X})$ : If the matrix $(\mathbf{X}^{\top}\mathbf{X})$ has a eigenvalue near of zero, the computation of $\boldsymbol{\beta}$ is hard. The procedure is said to be numerically unstable. Even worse, if there is a eigenvalue equal to zero, this matrix is singular and there is no unique solution.
+
+This document will focus on the concept of penalization and shrinkage methods. Shrinkage methods are relatively new and constitute an interesting path that allows us to solve the former problems.
+
+## Getting out of trouble...
+When facing adversity, it is always good to list the potential solutions to solve your problems. A natural solution would be [variable selection](https://en.wikipedia.org/wiki/Feature_selection). We would have to choose betwwen $AIC$,$BIC$, forward selection, backward selection or stepwise selection. For $AIC$ and $BIC$, it has been seen that creating all the models and checking for the smallest $AIC$ or $BIC$ is computationally infeasible for $p>30$. Thus, it would be wiser to use a procedure such as forward selection, backward selection or step-wise selection. 
+
+However, there are some problems with these procedures. First, subset selection is discontinuous in the sense that it is a discrete process. The variable is in the model or it is not. Thus, a small change in the data can lead to different estimates. As a result, subset selection is often unstable and has high variability. Next, inferential procedures made after subset selection in OLS regression violate some principles of statistical estimation and hypothesis testing. For example, $p$-values are falsely small. There has already been a selection of variables and the larger $p$-values removed form the model. Also, for the same reason, regression coefficients are biased away from zero. 
+
+One way to solve this problem is to introduce a penalty to our optimization problem. To do so, some mathematical formalization is necessary.
+
+## The loss function.
+To get a predictive model, you must train it on a set of observations. For training, you will normally try to minimize your loss function. The loss function is an indicator of how good your predictions are. 
+
+### Example: Linear regression
+For linear regression, we typically use the *Mean Squared Error*:
+$$L=\frac{1}{n}\sum_{i=1}^{n}(y_{i}-\hat{y_{i}})^{2}=\frac{(\mathbf{y}-\mathbf{X}\boldsymbol{\hat{\beta}})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\hat{\beta}})}{n}=\frac{RSS}{n}$$
+You can see that the $RSS$ quantity has been normalized by the number of observations. By doing this, the quantity $L$ can be interpreted more intuitively. However, from an optimization point of view, it is simply a choice and it is equivalent to the problem without normalization. In these documents, we will favor the following form:
+$$L=(\mathbf{y}-\mathbf{X}\boldsymbol{\hat{\beta}})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\hat{\beta}})$$
+
+## Regularization 
+In statistics and even in life, it is frequent to be in a situation where you desire two things that you can not have simultaneously. In such cases, a common solution would be to try to make a tradeoff between these things. This is the idea behind regularization. The minimization of the loss function will lead us to some kind of results. Unfortunately, something bothers us about this kind of results. Here is an equation to represent that:
+$$M(\boldsymbol{\theta})=L(\boldsymbol{\theta}\lvert\mathbf{x})+\lambda P(\boldsymbol{\theta})$$
+
+* $M(\boldsymbol{\theta})$: Objective function
+* $L(\boldsymbol{\theta}\lvert\mathbf{x})$: Loss function
+* $P(\boldsymbol{\theta})$: Penalization 
+* $\lambda$: Regularization term 
+
+The penalization is selected by the experimentator. For example, for linear regression, it is a common thing to penalize the "less realistic" values. In some general contexts such as optimization, some values are not possible to obtain. Thus, this can be thought of as an optimization problem under a constraint(the penalty in this case):
+$$\underset{\boldsymbol{\theta}}{\text{min}}\quad M(\boldsymbol{\theta}) \Leftrightarrow \underset{\boldsymbol{\theta}}{\text{min}}\quad L(\boldsymbol{\theta}\lvert\mathbf{x}) \quad \text{s.t} \quad P(\boldsymbol{\theta})\in\mathcal{H}$$
+where $\mathcal{H}$ is a region that acts like a constraint on $\boldsymbol{\theta}$.
+
+The parameter $\lambda$ controls the tradeoff between the penalty and the loss. Also, it allows us to balance the bias-variance tradeoff. There are many ways to select the value of the regularization term. It is an important decision! A common way to choose this value is to use [cross validation](https://en.wikipedia.org/wiki/Cross-validation_(statistics)). This subject will be treated in another document. 
+
+### Example: Popular linear regression penalizations
+The two most popular penalties for linear regression are ridge and lasso regressions. These methods penalize large values of parameters and consider small values of parameters as something more realistic. Ridge regression's objective function is:
+$$M(\boldsymbol{\beta})=(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})+\lambda\boldsymbol{\beta}^{\top}\boldsymbol{\beta} \quad\text{with}\quad \lambda\in[0,\infty[$$
+For the lasso, the objective function is:
+$$M(\boldsymbol{\beta})=(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})^{\top}(\mathbf{y}-\mathbf{X}\boldsymbol{\beta})+\lambda\sum_{i=1}^{k}\lvert\beta_{i}\lvert \quad\text{with}\quad \lambda\in[0,\infty[$$
+For these last two objective functions, the matrix $\mathbf{X}$ does not have its first column and $\beta_{0}$ is not included in $\boldsymbol{\beta}$. This kind of caracteristics might seem weird and unclear. Do not worry, all the details about these regressions will be treated in individual document(one for each regression). 
+
+## Conclusion
+To conclude, the penalization constitutes a solution to our former problems. First, by choosing an appropriate penalty and a good regularization term, it is possible to reduce the variance of the estimator and consequently of the predictions! Next, if $k>n$ for the linear regression case, an interesting solution is the ridge regression which will be treated in another article. It allows us to estimate the variance while still controlling overfitting. As you may have noticed, the value of the regularization term is important. In fact, it appears that:
+
+* If $\lambda$ is too small: We have overfitting problems and high variance models can occur.
+* If $\lambda$ is too big: We are underfitting the data which leads to models which are too simple and possibly biased. 
+
+Thus, a well choosen regularization term controls the complexity of the model which prevents overfitting.
+
+Sometimes, the objective function will be described as the sum of the loss function ($L(\boldsymbol{\theta}\lvert\mathbf{x})$) and the regularization ($\lambda P(\boldsymbol{\theta})$) . The loss function controls the predictive power. On the other hand, the regularization controls the complexity of the model. Finally, do not forget that penalization constitutes a good substitute to variable selection!
+
+## References
+* Penalized regression: Introduction.,
+  Patrick Breheny,
+  2011
+* The Elements of Statistical Learning.,
+  Trevor Hastie, Robert Tibshirani & Jerome Friedman,
+  2009
