@@ -57,7 +57,7 @@ library(grid)
 img <- readPNG("figures/visuel2.png")
  grid.raster(img)
 ```
-<\center>
+</center>
 
 The blue zone is the constraint area.  This region is a disk because $\beta_{1}^{2}+\beta_{2}^{2}<t$ corresponds to the equation of a disk. Constrained optimization theory deems that the solution occurs at the point on which a contour curve (an ellipse) is tangent to the constraint region (blue circle). 
 
